@@ -2,17 +2,16 @@ import curses
 import threading
 import subprocess
 
-gameWindowSizeX = 10
-gameWindowSizeY = 10
-
+# Constants
+gameWindowSize = (10, 10)
 buildOutputSizeY = 3
-
 windowMargin = 3 # Number of lines between the two windows
 
+# Globals
 buildOutput = [] # List of each line from build output
 
+# We read the build output in a separate thread to avoid blocking on readline
 def readBuildOutput():
-    # Setup build process
     buildProcess = subprocess.Popen('python -u fakeCompiler.py', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     while True:
@@ -38,13 +37,16 @@ def main(fullscreen):
 
         # TODO: make sure we have enough space and prompt to resize terminal if not
         buildWindow = curses.newwin(buildOutputSizeY, sizeX, 0, 0)
-        gameWindow = curses.newwin(gameWindowSizeY, gameWindowSizeX, buildOutputSizeY + windowMargin, 0)
+        gameWindow = curses.newwin(gameWindowSize[1], gameWindowSize[0] + 1, buildOutputSizeY + windowMargin, 0)
         return (buildWindow, gameWindow)
 
     (buildWindow, gameWindow) = setupWindows()
 
     buildThread = threading.Thread(target=readBuildOutput)
     buildThread.start()
+
+    # Game variables
+    characterPosition = [0, 0]
 
     # Main loop
     while buildThread.is_alive():
@@ -54,8 +56,23 @@ def main(fullscreen):
         inputKey = fullscreen.getch()
         if inputKey == curses.KEY_RESIZE:
             (buildWindow, gameWindow) = setupWindows(resize=True)
+        elif inputKey == ord('a'):
+            characterPosition[0] -= 1
+        elif inputKey == ord('d'):
+            characterPosition[0] += 1
+        elif inputKey == ord('w'):
+            characterPosition[1] -= 1
+        elif inputKey == ord('s'):
+            characterPosition[1] += 1
+
+        def clamp(value, minimum, maximum):
+            return max(minimum, min(maximum, value))
+
+        for dimension in range(2):
+            characterPosition[dimension] = clamp(characterPosition[dimension], 0, gameWindowSize[dimension] - 1)
+
         gameWindow.clear()
-        gameWindow.addch('G')
+        gameWindow.addch(characterPosition[1], characterPosition[0], 'G')
         gameWindow.refresh()
 
         # Print last 3 lines of build output
