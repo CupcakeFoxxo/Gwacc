@@ -3,12 +3,27 @@ import threading
 import subprocess
 
 # Constants
-gameWindowSize = (10, 10)
 buildOutputSizeY = 3
 windowMargin = 3 # Number of lines between the two windows
 
+gameWindowSize = (15, 15)
+enemyHordeSize = (10, 3)
+def enemyHordeRange(dimension): return (0, gameWindowSize[dimension] - 1 - enemyHordeSize[dimension] - 1)
+
 # Globals
 buildOutput = [] # List of each line from build output
+
+# Game Types
+class Enemy:
+    def __init__(self, positionX, positionY):
+        self.initialPosition = [positionX, positionY]
+        self.animation = ['I', 'Y']
+        self.animationIndex = 0
+        self.isAlive = True
+
+# Utilities
+def clamp(value, minimum, maximum):
+    return max(minimum, min(maximum, value))
 
 # We read the build output in a separate thread to avoid blocking on readline
 def readBuildOutput():
@@ -46,33 +61,40 @@ def main(fullscreen):
     buildThread.start()
 
     # Game variables
-    characterPosition = [0, 0]
+    characterPositionX = 0
+    enemyHorde = []
+    enemyHordePosition = [0, 0]
+    enemyHordeDirection = 1
+    for enemyX in range(enemyHordeSize[0]):
+        for enemyY in range(enemyHordeSize[1]):
+            newEnemy = Enemy(enemyX, enemyY)
+            enemyHorde.append(newEnemy)
 
     # Main loop
     while buildThread.is_alive():
-        fullscreen.refresh()
-
-        # Handle game update
+        # Update game state
         inputKey = fullscreen.getch()
         if inputKey == curses.KEY_RESIZE:
             (buildWindow, gameWindow) = setupWindows(resize=True)
         elif inputKey == ord('a'):
-            characterPosition[0] -= 1
+            characterPositionX -= 1
         elif inputKey == ord('d'):
-            characterPosition[0] += 1
-        elif inputKey == ord('w'):
-            characterPosition[1] -= 1
-        elif inputKey == ord('s'):
-            characterPosition[1] += 1
+            characterPositionX += 1
+        elif inputKey == ord(' '):
+            pass # TODO: fire
 
-        def clamp(value, minimum, maximum):
-            return max(minimum, min(maximum, value))
+        characterPositionX = clamp(characterPositionX, 0, gameWindowSize[0] - 1)
+        enemyHorde = [enemy for enemy in enemyHorde if enemy.isAlive]
 
-        for dimension in range(2):
-            characterPosition[dimension] = clamp(characterPosition[dimension], 0, gameWindowSize[dimension] - 1)
+        #enemyHorde
+        #for enemy in enemyHorde:
 
+
+        # Render
         gameWindow.clear()
-        gameWindow.addch(characterPosition[1], characterPosition[0], 'G')
+        for enemy in enemyHorde:
+            gameWindow.addch(enemy.initialPosition[1] + enemyHordePosition[1], enemy.initialPosition[0] + enemyHordePosition[0], 'Y')
+        gameWindow.addch(gameWindowSize[1] - 1, characterPositionX, 'S')
         gameWindow.refresh()
 
         # Print last 3 lines of build output
