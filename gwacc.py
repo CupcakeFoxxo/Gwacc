@@ -49,7 +49,7 @@ def clamp(value, minimum, maximum):
 
 # We read the build output in a separate thread to avoid blocking on readline
 def readBuildOutput():
-    buildProcess = subprocess.Popen('python -u fakeCompiler.py', stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    buildProcess = subprocess.Popen(['python', '-u', 'fakeCompiler.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     while True:
         buildLine = buildProcess.stdout.readline()
