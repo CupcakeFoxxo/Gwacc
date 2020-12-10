@@ -2,6 +2,7 @@ import curses
 import threading
 import subprocess
 import time
+import enum
 
 # Constants
 buildOutputSizeY = 3
@@ -16,8 +17,8 @@ enemyHordeRangeY = enemyHordeRange(1)
 gameUpdateRate = 1. / 30 # 30 FPS
 
 # Speeds are measured in the number of frames between position updates
-enemyHordeSpeed = 15
-bulletSpeed = 6
+enemyHordeSpeed = 10
+bulletSpeed = 4
 heroFireSpeed = 10
 
 # Globals
@@ -39,6 +40,11 @@ class Bullet:
         self.position = [positionX, positionY]
         self.lastUpdateFrame = lastUpdateFrame
         self.isAlive = True
+
+class GameOutcome(enum.Enum):
+    playing = 0
+    lost = 1
+    won = 2
 
 # Utilities
 def samePosition(position0, position1):
@@ -85,7 +91,7 @@ def main(fullscreen):
     lastGameUpdateTime = time.time()
     frameCounter = 0
 
-    gameOver = False
+    gameOutcome = GameOutcome.playing
 
     heroPositionX = 0
     heroBullets = []
@@ -104,10 +110,17 @@ def main(fullscreen):
 
     # Main loop
     while buildThread.is_alive():
-        currentTime = time.time()
+        # Print last 3 lines of build output
+        buildWindow.clear()
+        for outputLineIndex in range(3):
+            buildOutputLineIndex = len(buildOutput) - buildOutputSizeY - outputLineIndex
+            if buildOutputLineIndex >= 0:
+                buildWindow.addstr(outputLineIndex, 0, buildOutput[buildOutputLineIndex])
+        buildWindow.refresh()
 
+        currentTime = time.time()
         deltaTime = currentTime - lastGameUpdateTime
-        if deltaTime >= gameUpdateRate and not gameOver:
+        if gameOutcome == GameOutcome.playing and deltaTime >= gameUpdateRate:
             lastGameUpdateTime = currentTime
             frameCounter += 1
 
@@ -124,6 +137,10 @@ def main(fullscreen):
                     heroLastFireFrame = frameCounter
                     newBullet = Bullet(heroPositionX, gameWindowSize[1] - 2, frameCounter)
                     heroBullets.append(newBullet)
+            elif inputKey == ord('i'):
+                # Quit game
+                gameOutcome = GameOutcome.lost
+                break
 
             # Update and render game
             heroPositionX = clamp(heroPositionX, 0, gameWindowSize[0] - 1)
@@ -133,7 +150,7 @@ def main(fullscreen):
                     if samePosition(enemy.position, bullet.position):
                         enemy.isAlive = bullet.isAlive = False
                 if enemy.isAlive and enemy.position[1] >= heroPositionY:
-                    gameOver = True
+                    gameOutcome = GameOutcome.lost
 
             # Move the horde
             if frameCounter - enemyHordeLastUpdateFrame >= enemyHordeSpeed:
@@ -159,12 +176,12 @@ def main(fullscreen):
             enemyHorde = [enemy for enemy in enemyHorde if enemy.isAlive]
             heroBullets = [bullet for bullet in heroBullets if bullet.isAlive]
 
+            if not enemyHorde:
+                gameOutcome = GameOutcome.won
+
             gameWindow.clear()
             gameWindow.border('|', '|', '-', '-', '+', '+', '+', '+')
-            if enemyHordePosition[1] == enemyHordeRange(1)[1]:
-                gameOver = True
-                gameWindow.addstr('Game over!')
-            else:
+            if gameOutcome == GameOutcome.playing:
                 # Render based on game map coordinates with 0, 0 being top-left
                 def render(character, position):
                     gameWindow.addch(position[1] + 1, position[0] + 1, character)
@@ -173,16 +190,10 @@ def main(fullscreen):
                 for bullet in heroBullets:
                     render('^', bullet.position)
                 render('S', [heroPositionX, heroPositionY])
+            else:
+                gameWindow.addstr(1, 1, 'You {}!!!'.format('lost' if gameOutcome == GameOutcome.lost else 'won'))
 
             gameWindow.refresh()
-
-        # Print last 3 lines of build output
-        buildWindow.clear()
-        for outputLineIndex in range(3):
-            buildOutputLineIndex = len(buildOutput) - buildOutputSizeY - outputLineIndex
-            if buildOutputLineIndex >= 0:
-                buildWindow.addstr(outputLineIndex, 0, buildOutput[buildOutputLineIndex])
-        buildWindow.refresh()
 
     curses.endwin()
 
@@ -190,8 +201,8 @@ def main(fullscreen):
     for line in buildOutput:
         print(line)
 
-    if gameOver:
-        print('\n\nYou lost :(!')
+    if gameOutcome == GameOutcome.lost:
+        print('\n\nYou lost :(')
     else:
         print('\n\nYou won!! :D')
 
