@@ -15,6 +15,7 @@ def enemyHordeRange(dimension): return (0, (gameWindowSize[dimension] - 1) - (en
 enemyHordeRangeX = enemyHordeRange(0)
 enemyHordeRangeY = enemyHordeRange(1)
 gameUpdateRate = 1. / 30 # 30 FPS
+enemyAnimation = ('Y', 'T')
 
 # Speeds are measured in the number of frames between position updates
 enemyHordeSpeed = 10
@@ -28,8 +29,6 @@ buildOutput = [] # List of each line from build output
 class Enemy:
     def __init__(self, positionX, positionY):
         self.position = self.initialPosition = [positionX, positionY]
-        self.animation = ['I', 'Y']
-        self.animationIndex = 0
         self.isAlive = True
 
     def setPositionFromHordePosition(self, hordePosition):
@@ -101,6 +100,7 @@ def main(fullscreen):
     enemyHordePosition = [0, 0]
     enemyHordeDirection = 1
     enemyHordeLastUpdateFrame = 0
+    enemyAnimationIndex = 0
 
     # Setup horde positions
     for enemyX in range(enemyHordeSize[0]):
@@ -154,6 +154,7 @@ def main(fullscreen):
 
             # Move the horde
             if frameCounter - enemyHordeLastUpdateFrame >= enemyHordeSpeed:
+                enemyAnimationIndex += 1
                 enemyHordeLastUpdateFrame = frameCounter
                 enemyHordePosition[0] += enemyHordeDirection
                 enemyHordeRangeX = enemyHordeRange(0)
@@ -186,7 +187,7 @@ def main(fullscreen):
                 def render(character, position):
                     gameWindow.addch(position[1] + 1, position[0] + 1, character)
                 for enemy in enemyHorde:
-                    render('Y', enemy.position)
+                    render(enemyAnimation[enemyAnimationIndex % len(enemyAnimation)], enemy.position)
                 for bullet in heroBullets:
                     render('^', bullet.position)
                 render('S', [heroPositionX, heroPositionY])
