@@ -1,0 +1,12 @@
+Program stuff:
+    Programmable build command
+    Pip package
+    Save/restore for continuous runs across different builds
+    Online leaderboard
+    Multiple games
+
+Game stuff:
+    Better terminal resizing code
+    Enemies with different health
+    Explosion animation
+    Increasing speed over time

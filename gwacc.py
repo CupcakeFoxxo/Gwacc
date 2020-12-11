@@ -110,10 +110,10 @@ def main(fullscreen):
 
     # Main loop
     while buildThread.is_alive():
-        # Print last 3 lines of build output
+        # Print last buildOutputSizeY lines of build output
         buildWindow.clear()
-        for outputLineIndex in range(3):
-            buildOutputLineIndex = len(buildOutput) - buildOutputSizeY - outputLineIndex
+        for outputLineIndex in range(buildOutputSizeY):
+            buildOutputLineIndex = len(buildOutput) - (buildOutputSizeY - outputLineIndex)
             if buildOutputLineIndex >= 0:
                 buildWindow.addstr(outputLineIndex, 0, buildOutput[buildOutputLineIndex])
         buildWindow.refresh()
