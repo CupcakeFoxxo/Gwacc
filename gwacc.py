@@ -102,6 +102,8 @@ def main(fullscreen):
     enemyHordeLastUpdateFrame = 0
     enemyAnimationIndex = 0
 
+    explosions = []
+
     # Setup horde positions
     for enemyX in range(enemyHordeSize[0]):
         for enemyY in range(enemyHordeSize[1]):
@@ -149,11 +151,13 @@ def main(fullscreen):
                 for bullet in heroBullets:
                     if samePosition(enemy.position, bullet.position):
                         enemy.isAlive = bullet.isAlive = False
+                        explosions.append(enemy.position)
                 if enemy.isAlive and enemy.position[1] >= heroPositionY:
                     gameOutcome = GameOutcome.lost
 
             # Move the horde
             if frameCounter - enemyHordeLastUpdateFrame >= enemyHordeSpeed:
+                explosions = []
                 enemyAnimationIndex += 1
                 enemyHordeLastUpdateFrame = frameCounter
                 enemyHordePosition[0] += enemyHordeDirection
@@ -190,6 +194,8 @@ def main(fullscreen):
                     render(enemyAnimation[enemyAnimationIndex % len(enemyAnimation)], enemy.position)
                 for bullet in heroBullets:
                     render('^', bullet.position)
+                for explosion in explosions:
+                    render('*', explosion)
                 render('S', [heroPositionX, heroPositionY])
             else:
                 gameWindow.addstr(1, 1, 'You {}!!!'.format('lost' if gameOutcome == GameOutcome.lost else 'won'))

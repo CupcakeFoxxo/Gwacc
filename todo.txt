@@ -8,5 +8,4 @@ Program stuff:
 Game stuff:
     Better terminal resizing code
     Enemies with different health
-    Explosion animation
     Increasing speed over time
